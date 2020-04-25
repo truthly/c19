@@ -62,3 +62,6 @@ dbCommit(db)
 
 # Disconnect from the database
 dbDisconnect(db)
+
+# Save Excel-file in git repo
+file.rename(xls_file, paste0("files/",report_date,".xlsx"))
