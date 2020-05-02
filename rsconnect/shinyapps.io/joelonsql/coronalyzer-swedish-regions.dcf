@@ -1,0 +1,13 @@
+name: coronalyzer-swedish-regions
+title: coronalyzer-swedish-regions
+username:
+account: joelonsql
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2225842
+bundleId: 3091429
+url: https://joelonsql.shinyapps.io/coronalyzer-swedish-regions/
+when: 1588360932.07063
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: deaths_per_region.sql|deaths.sql|lageffect.R|README.md|README.template|regions.R|update.R|update.sh|files|graphs
