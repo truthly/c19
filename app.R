@@ -4,8 +4,7 @@ library(drc)
 library(lubridate)
 library(scales)
 library(DBI)
-
-forecast_days <- 100
+library(DT)
 
 # Connect to PostgreSQL
 db <- dbConnect(
@@ -40,13 +39,24 @@ ui <- dashboardPage(
                 max = Sys.Date(),
                 value = Sys.Date(),
                 animate = animationOptions(interval=1000)
+    ),
+    sliderInput("forecast_days",
+                "Forecast:",
+                min = 1,
+                max = 1000,
+                value = 200
     )
   ),
   dashboardBody(
-#    tags$style(type = "text/css", "#graphCurve {height: calc(100vh - 200px) !important; width: calc(100vw - 400px) !important;}"),
+#    tags$style(type = "text/css", "#graphCurve {height: calc(100vh - 200px) !important}"),
     fluidRow(
-      box(
+      box(width = "640",
         plotOutput("graphCurve")
+      )
+    ),
+    fluidRow(
+      box(width = "640",
+          DT::dataTableOutput("dataTable")
       )
     ),
     hr(),
@@ -70,11 +80,11 @@ getVal <- function(val, key) {
 }
 
 server <- function(input, output, session) {
-  shinyOptions(cache = memoryCache(max_size = 100e6))
   graphCurveX <- reactiveVal()
   graphCurveY <- reactiveVal()
+  dataTable <- reactiveVal()
   
-  output$graphCurve <- renderCachedPlot({
+  output$graphCurve <- renderPlot({
     
     updateSliderInput(session, "date", min = min(input_data$date))
     updateSliderInput(session, "date", max = max(input_data$date))
@@ -91,7 +101,7 @@ server <- function(input, output, session) {
         next
       }
 
-      predict_to_day <- max(data$day) + 1 + forecast_days
+      predict_to_day <- max(data$day) + input$forecast_days
       predict_from_day <-  max(data$day) + 1
       min_date <- min(data$date)
 
@@ -108,6 +118,7 @@ server <- function(input, output, session) {
 
       data$predict <- round(predict(model, newdata=data))
       data$date <- min_date + data$day - 1
+#      data <- data %>% group_by(region) %>% arrange(date) %>% mutate(new_deaths = deaths - lag(deaths))
   
       result <- rbind(result, data)
 
@@ -119,6 +130,28 @@ server <- function(input, output, session) {
     sum$day <- sum$date - min(sum$date) + 1
     result <- rbind(result, sum)
 
+    dataTable(sum %>%
+        group_by(region) %>%
+        arrange(date) %>%
+        mutate(new_deaths = deaths - lag(deaths), new_deaths_predicted = predict - lag(predict)) %>%
+        filter(date >= input$date) %>%
+        rename(
+          total_deaths_predicted=predict,
+          total_deaths_actual=deaths,
+          new_deaths_actual=new_deaths
+        ) %>%
+        mutate(
+          diff_total_deaths=total_deaths_predicted-total_deaths_actual,
+          diff_new_deaths=new_deaths_predicted-new_deaths_actual) %>%
+        mutate(
+          total_deaths_predicted = if_else(date > input$date, total_deaths_predicted, NULL),
+          new_deaths_predicted = if_else(date > input$date, new_deaths_predicted, NULL),
+          diff_total_deaths = if_else(date > input$date, diff_total_deaths, NULL),
+          diff_new_deaths = if_else(date > input$date, diff_new_deaths, NULL),
+        ) %>%
+        dplyr::select(-`day`)
+    )
+    
     labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
     
     plot <- ggplot(result, aes(x=date)) +
@@ -133,16 +166,16 @@ server <- function(input, output, session) {
       theme_minimal() +
       geom_vline(aes(xintercept = Sys.Date()), color="black") +
       geom_vline(aes(xintercept = input$date), color="black") +
-      ggtitle(paste0("COVID-19 - Input <= ", input$date)) +
       scale_y_log10(labels = labels_f) +
       coord_cartesian(ylim = c(1,10000))
 
     print(plot)        
   
-  },
-    cacheKeyExpr = {list(input$date)},
-    sizePolicy = sizeGrowthRatio(width = 1416, height = 640, growthRate = 1.1)
-  )
+  })
+  
+  output$dataTable <- renderDataTable({
+    datatable(dataTable(), options = list(paging = FALSE))
+  })
   
 }
 
