@@ -4,31 +4,26 @@ library(drc)
 library(lubridate)
 library(scales)
 library(DBI)
+library(pool)
 library(DT)
 
 # Connect to PostgreSQL
-db <- dbConnect(
-  RPostgres::Postgres(),
+pool <- dbPool(
+  drv = RPostgres::Postgres(),
   dbname = "c19",
   host = "c19.truthly.com",
   port = 5432,
-  user = "c19"
+  user = "c19",
+  minSize = 5,
+  maxSize = 50
 )
 
-input_data <- dbGetQuery(db, "
-  SELECT
-    region,
-    report_date::date AS date,
-    deaths::numeric,
-    ROW_NUMBER() OVER (PARTITION BY region ORDER BY report_date)::integer AS day
+regions <- dbGetQuery(pool, "
+  SELECT DISTINCT region
   FROM deaths_per_region
-  WHERE deaths > 0
-  ORDER BY 1,2
-")
+  ORDER BY 1
+")$region
 
-dbDisconnect(db)
-
-regions <- unique(input_data$region)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Coronalyzer"),
@@ -86,6 +81,17 @@ server <- function(input, output, session) {
   
   output$graphCurve <- renderPlot({
     
+    input_data <- dbGetQuery(pool, "
+      SELECT
+        region,
+        report_date::date AS date,
+        deaths::numeric,
+        ROW_NUMBER() OVER (PARTITION BY region ORDER BY report_date)::integer AS day
+      FROM deaths_per_region
+      WHERE deaths > 0
+      ORDER BY 1,2
+    ")
+
     updateSliderInput(session, "date", min = min(input_data$date))
     updateSliderInput(session, "date", max = max(input_data$date))
 
