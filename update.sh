@@ -4,6 +4,7 @@ LOG="/tmp/update.log"
 
 r update.R >> ${LOG} 2>&1
 r lageffect.R >> ${LOG} 2>&1
+r regions.R >> ${LOG} 2>&1
 DATE=`date "+%Y-%m-%d"`
 
 cat README.template > README.md
