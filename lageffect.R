@@ -19,7 +19,7 @@ data <- dbGetQuery(db, "
     report_date,
     death_date,
     deaths,
-    CASE WHEN report_date > MIN(report_date) OVER () THEN report_date - death_date ELSE 0 END AS lag_effect,
+    CASE WHEN report_date > MIN(report_date) OVER () THEN report_date - death_date END AS lag_effect,
     deaths - COALESCE(LAG(deaths) OVER (PARTITION BY death_date ORDER BY report_date),0) AS new_deaths
   FROM deaths
 ")
@@ -48,10 +48,10 @@ plot2 <- ggplot(data, aes(x=death_date)) +
   labs(x = "Datum avliden", color = "Rapportdatum", y = "Antal avlidna")
 
 data$lag_effect <- pmin(7, data$lag_effect)
-data$lag_effect <-  as.factor(data$lag_effect)
+data$lag_effect <- factor(data$lag_effect, levels = sort(unique(data$lag_effect), decreasing = TRUE))
 
 plot3 <- ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack(reverse = TRUE)) +
+  geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack()) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
   ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
