@@ -47,7 +47,7 @@ plot2 <- ggplot(data, aes(x=death_date)) +
   ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
   labs(x = "Datum avliden", color = "Rapportdatum", y = "Antal avlidna")
 
-data$lag_effect <- pmin(7, data$lag_effect)
+data$lag_effect <- pmin(14, data$lag_effect)
 data$lag_effect <- factor(data$lag_effect, levels = sort(unique(data$lag_effect), decreasing = TRUE))
 
 plot3 <- ggplot(data, aes(x=death_date)) +
