@@ -1,4 +1,4 @@
-# COVID-19 death data for Sweden
+<h1 id="top">🦠🐘<code>c19</code></h1>
 
 This is an unofficial mirror of the Public Health Agency of Sweden's (Folkhälsomyndigheten) COVID-19 historical death data.
 
