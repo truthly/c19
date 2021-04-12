@@ -2,7 +2,7 @@
 
 LOG="/tmp/update.log"
 
-r update.R >> ${LOG} 2>&1
+r update.R || exit 1 >> ${LOG} 2>&1
 r lageffect.R >> ${LOG} 2>&1
 r regions.R >> ${LOG} 2>&1
 DATE=`date "+%Y-%m-%d"`
@@ -16,3 +16,4 @@ git add --all ~/c19 >> ${LOG} 2>&1
 git commit -m "Add $DATE" >> ${LOG} 2>&1
 git push >> ${LOG} 2>&1
 
+exit 0
